@@ -121,3 +121,22 @@ func TestParseMachineKey(t *testing.T) {
 		t.Fatalf("unexpected config: %#v", got)
 	}
 }
+
+func TestParseMachineKeyAppliesManagedDefaults(t *testing.T) {
+	t.Parallel()
+
+	xml := `<system.web><machineKey validationKey="AutoGenerate,IsolateApps" decryptionKey="AutoGenerate,IsolateApps" /></system.web>`
+	got, err := ParseMachineKey([]byte(xml))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Validation != "HMACSHA256" {
+		t.Fatalf("validation = %q, want HMACSHA256", got.Validation)
+	}
+	if got.Decryption != "Auto" {
+		t.Fatalf("decryption = %q, want Auto", got.Decryption)
+	}
+	if got.CompatibilityMode != "Framework20SP1" {
+		t.Fatalf("compatibilityMode = %q, want Framework20SP1", got.CompatibilityMode)
+	}
+}

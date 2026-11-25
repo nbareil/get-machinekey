@@ -276,7 +276,7 @@ func identitySID(account string) (string, error) {
 func effectiveMachineKey(ctx context.Context, appcmd string, app iis.Application) (iis.MachineKey, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, effectiveConfigTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(queryCtx, appcmd, "list", "config", iis.ConfigURL(app), "/section:system.web/machineKey", "/config:*")
+	cmd := exec.CommandContext(queryCtx, appcmd, effectiveMachineKeyArgs(app)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, err := cmd.Output()
 	if err != nil {

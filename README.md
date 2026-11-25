@@ -113,7 +113,9 @@ The implementation follows the .NET Framework reference source for
 `MachineKeyMasterKeyProvider`: 32 bytes of the auto-generated material form the
 encryption KDK, the following 32 bytes form the validation KDK, and optional
 `IsolateApps` / `IsolateByAppId` purpose strings feed the SP800-108 derivation.
-IIS `AppCmd list config <URL> /section:system.web/machineKey /config:*` is used
-because it returns effective inherited configuration rather than only the
-nearest `Web.config` file.
+IIS `AppCmd list config <URL> /section:system.web/machineKey` is used because
+it returns effective inherited configuration rather than only the nearest
+`Web.config` file. The collector deliberately omits AppCmd's `/config:*`
+option: that option injects IIS schema defaults such as `validation="SHA1"`
+even when System.Web applies its managed default of `HMACSHA256`.
 
