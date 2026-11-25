@@ -49,13 +49,79 @@ For ARM64 Windows, replace `GOARCH=amd64` with `GOARCH=arm64`.
 ## Run
 
 Run from an EDR as SYSTEM and capture stdout. The URL can be positional or
-passed with `-url`:
+passed with `-url`.
 
-```text
-get-machinekey.exe https://www.example.test/orders/view.aspx?id=42
-get-machinekey.exe -pretty -url https://www.example.test/orders/view.aspx?id=42
-get-machinekey.exe -site "Default Web Site" https://www.example.test/app/page.aspx
+### Collect keys for a captured request
+
+Pass the complete request URL. The file name does not need to exist: its host,
+port, and path are used to select the IIS site and longest matching application.
+
+```powershell
+.\get-machinekey.exe 'https://www.example.test/orders/view.aspx?id=42'
 ```
+
+Use `-pretty` when reading the JSON interactively:
+
+```powershell
+.\get-machinekey.exe -pretty -url 'https://www.example.test/orders/view.aspx?id=42'
+```
+
+### Override an ambiguous IIS binding
+
+If multiple sites have wildcard or overlapping bindings, select the site by
+its IIS name. The URL path is still used to select the application within that
+site.
+
+```powershell
+.\get-machinekey.exe -pretty -site 'Default Web Site' 'http://127.0.0.1/app/page.aspx'
+```
+
+### Inventory every IIS application
+
+Omit the URL to report every application configured on the server:
+
+```powershell
+.\get-machinekey.exe -pretty
+```
+
+### Save output for incident response
+
+Redirect stdout from Command Prompt when an EDR cannot capture it directly,
+then restrict the resulting file immediately:
+
+```bat
+mkdir C:\ProgramData\IR 2>NUL
+get-machinekey.exe https://www.example.test/orders/view.aspx > C:\ProgramData\IR\machinekeys.json
+icacls C:\ProgramData\IR\machinekeys.json /inheritance:r /grant:r "SYSTEM:(F)" "Administrators:(F)"
+```
+
+Diagnostics remain on stderr, so the redirected file contains only the JSON
+document. Delete the file after the investigation.
+
+### Inspect non-key fields in PowerShell
+
+The following example parses the report and displays application metadata and
+collection errors without printing key fields:
+
+```powershell
+$report = .\get-machinekey.exe -url 'https://www.example.test/orders/view.aspx' |
+    ConvertFrom-Json
+$report.applications |
+    Select-Object site, application_path, application_pool, key_source, errors
+```
+
+### Read an alternate IIS configuration
+
+For a mounted or copied IIS configuration, override the default
+`applicationHost.config` path:
+
+```powershell
+.\get-machinekey.exe -pretty `
+    -application-host-config 'D:\evidence\applicationHost.config'
+```
+
+Key material is still read from the current Windows host, so this option is
+not a complete offline-image collection mode.
 
 `-site` is an optional authoritative override for reverse proxies or servers
 where wildcard or overlapping bindings make the URL ambiguous. It selects the
